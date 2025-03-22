@@ -38,9 +38,54 @@ return {
     event = "User BaseDefered",
     cmd = { "Yazi", "Yazi cwd", "Yazi toggle" },
     opts = {
-        open_for_directories = true,
-        floating_window_scaling_factor = (is_android and 1.0) or 0.71
+      open_for_directories = true,
+      floating_window_scaling_factor = (is_android and 1.0) or 0.71
     },
+  },
+
+  -- [osc52] clipboard integration
+  -- https://github.com/ojroques/nvim-osc52
+  {
+    "ojroques/nvim-osc52",
+    event = "User BaseDefered",
+    config = function()
+      local function copy(lines, _)
+        require('osc52').copy(table.concat(lines, '\n'))
+      end
+
+      local function paste()
+        return { vim.fn.split(vim.fn.getreg(''), '\n'), vim.fn.getregtype('') }
+      end
+
+      vim.g.clipboard = {
+        name = 'osc52',
+        copy = { ['+'] = copy, [''] = copy },
+        paste = { ['+'] = paste, [''] = paste },
+      }
+
+      -- Enable OSC52 for all sessions
+      vim.api.nvim_create_autocmd('VimEnter', {
+        callback = function()
+          vim.g.clipboard = {
+            name = 'osc52',
+            copy = { ['+'] = copy, [''] = copy },
+            paste = { ['+'] = paste, [''] = paste },
+          }
+        end,
+      })
+
+      -- Optionally, add mappings to explicitly trigger OSC52 copy
+      vim.api.nvim_set_keymap('n', '<leader>c', "<cmd>lua require('osc52').copy_operator()<CR>", { noremap = true })
+      vim.api.nvim_set_keymap('x', '<leader>c', "<cmd>lua require('osc52').copy_visual()<CR>", { noremap = true })
+
+      -- When entering a .txt file, enable line wrapping locally
+      vim.api.nvim_create_autocmd("BufEnter", {
+        pattern = "*.txt",
+        callback = function()
+          vim.opt_local.wrap = true
+        end,
+      })
+    end,
   },
 
   -- project.nvim [project search + auto cd]
@@ -71,8 +116,8 @@ return {
 
       -- Don't chdir for certain buffers
       exclude_chdir = {
-        filetype = {"", "OverseerList", "alpha"},
-        buftype = {"nofile", "terminal"},
+        filetype = { "", "OverseerList", "alpha" },
+        buftype = { "nofile", "terminal" },
       },
 
       --ignore_lsp = { "lua_ls" },
@@ -710,8 +755,8 @@ return {
       "DistroUpdateRevert"
     },
     opts = {
-        channel = "stable" -- stable/nightly
+      channel = "stable" -- stable/nightly
     }
   },
 
-} -- end of return
+}

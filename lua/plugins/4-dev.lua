@@ -196,7 +196,7 @@ return {
     config = function(_, opts)
       require("aerial").setup(opts)
       -- HACK: The first time you open aerial on a session, close all folds.
-      vim.api.nvim_create_autocmd({"FileType", "BufEnter"}, {
+      vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
         desc = "Aerial: When aerial is opened, close all its folds.",
         callback = function()
           local is_aerial = vim.bo.filetype == "aerial"
@@ -220,11 +220,11 @@ return {
     opts = {
       notify = { enabled = false },
       tree = {
-          icon_set = "default" -- "nerd", "codicons", "default", "simple"
+        icon_set = "default" -- "nerd", "codicons", "default", "simple"
       },
       panel = {
-          orientation = "bottom",
-          panel_size = 10,
+        orientation = "bottom",
+        panel_size = 10,
       },
     },
     config = function(_, opts)
@@ -257,8 +257,10 @@ return {
               vim.wo.colorcolumn = "0"
               vim.wo.foldcolumn = "0"
               vim.cmd("silent! PinBuffer") -- stickybuf.nvim
-              vim.cmd("silent! hi LTSymbolJump ctermfg=015 ctermbg=110 cterm=italic,bold,underline guifg=#464646 guibg=#87afd7 gui=italic,bold")
-              vim.cmd("silent! hi LTSymbolJumpRefs ctermfg=015 ctermbg=110 cterm=italic,bold,underline guifg=#464646 guibg=#87afd7 gui=italic,bold")
+              vim.cmd(
+                "silent! hi LTSymbolJump ctermfg=015 ctermbg=110 cterm=italic,bold,underline guifg=#464646 guibg=#87afd7 gui=italic,bold")
+              vim.cmd(
+                "silent! hi LTSymbolJumpRefs ctermfg=015 ctermbg=110 cterm=italic,bold,underline guifg=#464646 guibg=#87afd7 gui=italic,bold")
             else
               vim.cmd("silent! highlight clear LTSymbolJump")
               vim.cmd("silent! highlight clear LTSymbolJumpRefs")
@@ -393,7 +395,7 @@ return {
       "OverseerClearCache"
     },
     opts = {
-     task_list = { -- the window that shows the results.
+      task_list = { -- the window that shows the results.
         direction = "bottom",
         min_height = 25,
         max_height = 25,
@@ -614,8 +616,8 @@ return {
           type = 'kotlin',
           request = 'launch',
           name = 'Launch kotlin program',
-          projectRoot = "${workspaceFolder}/app",     -- ensure this is correct
-          mainClass = "AppKt",                        -- ensure this is correct
+          projectRoot = "${workspaceFolder}/app", -- ensure this is correct
+          mainClass = "AppKt",                    -- ensure this is correct
         },
       }
 
@@ -847,6 +849,40 @@ return {
     end,
   },
 
+  {
+    "zbirenbaum/copilot.lua",
+    event = { "InsertEnter" },
+    config = function()
+      require("copilot").setup({
+        suggestion = {
+          auto_trigger = true, -- Automatically show suggestions
+          debounce = 75,
+          keymap = {
+            accept = "<C-Space>", -- Accept the Copilot suggestion with Ctrl + Space
+            dismiss = "<C-x>",    -- Dismiss suggestion with Ctrl + x
+            next = "<C-j>",       -- Go to the next Copilot suggestion
+            prev = "<C-k>",       -- Go to the previous Copilot suggestion
+            trigger = "<C-\\>",   -- Manually trigger suggestions with Ctrl + \
+          },
+        },
+      })
+    end,
+  }, {
+  "zbirenbaum/copilot-cmp",
+  after = { "copilot.lua" },
+  config = function()
+    require("copilot_cmp").setup({
+      method = "getCompletionsCycling", -- Rotate through multiple-line suggestions
+      formatters = {
+        label = require("copilot_cmp.format").format_label_text,
+        insert_text = require("copilot_cmp.format").format_insert_text,
+        preview = require("copilot_cmp.format").deindent,
+      },
+    })
+  end
+},
+
+
   --  Shows a float panel with the [code coverage]
   --  https://github.com/andythigpen/nvim-coverage
   --
@@ -895,8 +931,11 @@ return {
         desc = "Auto generate C/C++ tags",
         callback = function()
           local is_c = vim.bo.filetype == "c" or vim.bo.filetype == "cpp"
-          if is_c then vim.g.gutentags_enabled = 1
-          else vim.g.gutentags_enabled = 0 end
+          if is_c then
+            vim.g.gutentags_enabled = 1
+          else
+            vim.g.gutentags_enabled = 0
+          end
         end,
       })
     end,

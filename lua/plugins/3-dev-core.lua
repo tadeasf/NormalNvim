@@ -479,6 +479,72 @@ return {
     specs = { { "Bilal2453/luvit-meta", lazy = true } },
   },
 
+  --  flutter-tools.nvim [Flutter development]
+  --  https://github.com/akinsho/flutter-tools.nvim
+  {
+    "akinsho/flutter-tools.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "stevearc/dressing.nvim", -- optional for vim.ui.select
+    },
+    ft = { "dart" },
+    opts = {
+      lsp = {
+        capabilities = function()
+          return require("base.utils.lsp").capabilities
+        end,
+        on_attach = function(client, bufnr)
+          -- Apply your LSP mappings
+          require("base.utils.lsp").apply_user_lsp_mappings(client, bufnr)
+          
+          -- Add Flutter specific commands
+          vim.api.nvim_buf_create_user_command(bufnr, "FlutterRun", function()
+            require("flutter-tools").run_command()
+          end, { desc = "Run Flutter app" })
+          
+          vim.api.nvim_buf_create_user_command(bufnr, "FlutterDevices", function()
+            require("flutter-tools").devices()
+          end, { desc = "List Flutter devices" })
+          
+          vim.api.nvim_buf_create_user_command(bufnr, "FlutterReload", function()
+            require("flutter-tools").reload()
+          end, { desc = "Hot reload Flutter app" })
+          
+          vim.api.nvim_buf_create_user_command(bufnr, "FlutterRestart", function()
+            require("flutter-tools").restart()
+          end, { desc = "Hot restart Flutter app" })
+        end,
+        settings = {
+          dart = {
+            completeFunctionCalls = true,
+            showTodos = true,
+            enableSnippets = true,
+            updateImportsOnRename = true,
+          }
+        },
+      },
+      debugger = {
+        enabled = true,
+        run_via_dap = true,
+      },
+      widget_guides = {
+        enabled = true,
+      },
+      dev_log = {
+        enabled = true,
+        open_cmd = "tabedit",
+      },
+      dev_tools = {
+        autostart = false,
+        auto_open_browser = false,
+      },
+      outline = {
+        open_cmd = "30vnew",
+        auto_open = false,
+      },
+    },
+  },
+
   --  AUTO COMPLETION --------------------------------------------------------
   --  Auto completion engine [autocompletion engine]
   --  https://github.com/hrsh7th/nvim-cmp

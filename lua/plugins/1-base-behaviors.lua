@@ -621,7 +621,7 @@ return {
     dependencies = "windwp/nvim-ts-autotag",
     opts = {
       check_ts = true,
-      ts_config = { java = false },
+      ts_config = {},
       fast_wrap = {
         map = "<M-e>",
         chars = { "{", "[", "(", '"', "'" },

@@ -9,7 +9,6 @@
 --       -> nvim-highlight-colors          [hex colors]
 
 --       ## LSP
---       -> nvim-java                      [java support]
 --       -> mason-lspconfig                [auto start lsp]
 --       -> nvim-lspconfig                 [lsp configs]
 --       -> mason.nvim                     [lsp package manager]
@@ -180,45 +179,12 @@ return {
 
   --  LSP -------------------------------------------------------------------
 
-  -- nvim-java [java support]
-  -- https://github.com/nvim-java/nvim-java
-  -- Reliable jdtls support. Must go before mason-lspconfig and lsp-config.
-  {
-    "nvim-java/nvim-java",
-    ft = { "java" },
-    dependencies = {
-      "MunifTanjim/nui.nvim",
-      "neovim/nvim-lspconfig",
-      "mfussenegger/nvim-dap",
-      "williamboman/mason.nvim",
-    },
-    opts = {
-      notifications = {
-        dap = false,
-      },
-      -- NOTE: One of these files must be in your project root directory.
-      --       Otherwise the debugger will end in the wrong directory and fail.
-      root_markers = {
-        'settings.gradle',
-        'settings.gradle.kts',
-        'pom.xml',
-        'build.gradle',
-        'mvnw',
-        'gradlew',
-        'build.gradle',
-        'build.gradle.kts',
-        '.git',
-      },
-    },
-  },
-
   --  nvim-lspconfig [lsp configs]
   --  https://github.com/neovim/nvim-lspconfig
   --  This plugin provide default configs for the lsp servers available on mason.
   {
     "neovim/nvim-lspconfig",
     event = "User BaseFile",
-    dependencies = "nvim-java/nvim-java",
   },
 
   -- mason-lspconfig [auto start lsp]
@@ -257,7 +223,6 @@ return {
     },
     opts = {
       registries = {
-        "github:nvim-java/mason-registry",
         "github:mason-org/mason-registry",
       },
       ui = {
@@ -306,6 +271,7 @@ return {
         'none-ls-external-sources.formatting.easy-coding-standard',
         'none-ls-external-sources.formatting.eslint',
         'none-ls-external-sources.formatting.eslint_d',
+        'none-ls-external-sources.formatting.goimports',
         'none-ls-external-sources.formatting.jq',
         'none-ls-external-sources.formatting.latexindent',
         'none-ls-external-sources.formatting.reformat_gherkin',
@@ -343,7 +309,7 @@ return {
     opts = {
       aggressive_mode = false,
       excluded_lsp_clients = {
-        "null-ls", "jdtls", "marksman", "lua_ls"
+        "null-ls", "marksman", "lua_ls"
       },
       grace_period = (60 * 15),
       wakeup_delay = 3000,
@@ -415,7 +381,6 @@ return {
         { path = "ts-comments.nvim", mods = { "ts-comments" } },
         { path = "markdown.nvim", mods = { "render-markdown" } },
         { path = "nvim-highlight-colors", mods = { "nvim-highlight-colors" } },
-        { path = "nvim-java", mods = { "java" } },
         { path = "nvim-lspconfig", mods = { "lspconfig" } },
         { path = "mason-lspconfig.nvim", mods = { "mason-lspconfig" } },
         { path = "mason.nvim", mods = { "mason", "mason-core", "mason-registry", "mason-vendor" } },
@@ -457,7 +422,6 @@ return {
         { path = "neotest-dotnet", mods = { "neotest-dotnet" } },
         { path = "neotest-elixir", mods = { "neotest-elixir" } },
         { path = "neotest-golang", mods = { "neotest-golang" } },
-        { path = "neotest-java", mods = { "neotest-java" } },
         { path = "neotest-jest", mods = { "neotest-jest" } },
         { path = "neotest-phpunit", mods = { "neotest-phpunit" } },
         { path = "neotest-python", mods = { "neotest-python" } },
@@ -543,6 +507,35 @@ return {
         auto_open = false,
       },
     },
+  },
+
+  --  rustaceanvim [Rust LSP + tools]
+  --  https://github.com/mrcjkb/rustaceanvim
+  --  Replaces plain rust_analyzer with: expand macros, hover actions,
+  --  runnables, cargo features, proc macro expansion, and more.
+  --  NOTE: Do NOT set up rust_analyzer via mason-lspconfig; rustaceanvim handles it.
+  --  Install via Mason: rust-analyzer, codelldb (for DAP)
+  {
+    "mrcjkb/rustaceanvim",
+    version = "^5",
+    ft = { "rust" },
+    opts = {
+      server = {
+        on_attach = function(client, bufnr)
+          require("base.utils.lsp").apply_user_lsp_mappings(client, bufnr)
+        end,
+        default_settings = {
+          ["rust-analyzer"] = {
+            cargo = { allFeatures = true },
+            checkOnSave = { command = "clippy" },
+            inlayHints = { lifetimeElisionHints = { enable = "always" } },
+          },
+        },
+      },
+    },
+    config = function(_, opts)
+      vim.g.rustaceanvim = opts
+    end,
   },
 
   --  AUTO COMPLETION --------------------------------------------------------

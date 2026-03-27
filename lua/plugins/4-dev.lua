@@ -850,10 +850,10 @@ return {
           auto_trigger = true, -- Automatically show suggestions
           debounce = 75,
           keymap = {
-            accept = "<C-Space>", -- Accept the Copilot suggestion with Ctrl + Space
+            accept = false,       -- Handled by Tab in cmp mapping
             dismiss = "<C-x>",    -- Dismiss suggestion with Ctrl + x
-            next = "<C-j>",       -- Go to the next Copilot suggestion
-            prev = "<C-k>",       -- Go to the previous Copilot suggestion
+            next = "<M-]>",       -- Next suggestion with Alt + ]
+            prev = "<M-[>",       -- Previous suggestion with Alt + [
             trigger = "<C-\\>",   -- Manually trigger suggestions with Ctrl + \
           },
         },

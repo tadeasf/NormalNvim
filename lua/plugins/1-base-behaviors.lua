@@ -74,10 +74,6 @@ return {
         end,
       })
 
-      -- Optionally, add mappings to explicitly trigger OSC52 copy
-      vim.api.nvim_set_keymap('n', '<leader>c', "<cmd>lua require('osc52').copy_operator()<CR>", { noremap = true })
-      vim.api.nvim_set_keymap('x', '<leader>c', "<cmd>lua require('osc52').copy_visual()<CR>", { noremap = true })
-
       -- When entering a .txt file, enable line wrapping locally
       vim.api.nvim_create_autocmd("BufEnter", {
         pattern = "*.txt",

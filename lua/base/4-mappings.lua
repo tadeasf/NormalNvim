@@ -291,6 +291,10 @@ maps.n["<leader>C"] = { -- Close buffer keeping the window.
   function() require("heirline-components.buffer").close() end,
   desc = "Close buffer",
 }
+maps.n["<leader>x"] = { -- Close buffer keeping the window (alias).
+  function() require("heirline-components.buffer").close() end,
+  desc = "Close buffer",
+}
 maps.n["<leader>bw"] = {     -- Closes the window
   function()
     vim.cmd("silent! close") -- Be aware you can't close the last window
@@ -922,8 +926,8 @@ if is_available("telescope.nvim") then
     desc = "Find words in project",
   }
   maps.n["<leader>fF"] = {
-    function() require("telescope.builtin").live_grep() end,
-    desc = "Find words in project (no hidden)",
+    function() require("telescope.builtin").live_grep({ grep_open_files = true }) end,
+    desc = "Find words in open buffers",
   }
   maps.n["<leader>f/"] = {
     function() require("telescope.builtin").current_buffer_fuzzy_find() end,
@@ -975,13 +979,20 @@ if is_available("telescope.nvim") then
     }
   end
 
-  -- extra - luasnip
+  -- extra - luasnip (snippets moved to <leader>fS)
   if is_available("LuaSnip") and is_available("telescope-luasnip.nvim") then
-    maps.n["<leader>fs"] = {
+    maps.n["<leader>fS"] = {
       function() require("telescope").extensions.luasnip.luasnip {} end,
       desc = "Find snippets",
     }
   end
+
+  maps.n["<leader>fs"] = {
+    function()
+      require("telescope.builtin").find_files { hidden = true, no_ignore = true }
+    end,
+    desc = "Find files in workspace",
+  }
 
   -- extra - nvim-neoclip (neovim internal clipboard)
   --         Specially useful if you disable the shared clipboard in options.

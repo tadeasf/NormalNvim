@@ -308,44 +308,36 @@ return {
   },
 
   --  ARTIFICIAL INTELLIGENCE  -------------------------------------------------
-  --  neural [chatgpt code generator]
-  --  https://github.com/dense-analysis/neural
-  --
-  --  NOTE: In order for this plugin to work, you will have to set
-  --        the next env var in your OS:
-  --        OPENAI_API_KEY="my_key_here"
+  --  claudecode.nvim [Claude Code IDE integration]
+  --  https://github.com/coder/claudecode.nvim
+  --  Creates a WebSocket server so Claude Code CLI gets full IDE awareness
+  --  of your Neovim state (open files, selections, diffs).
   {
-    "dense-analysis/neural",
-    cmd = { "Neural" },
-    config = function()
-      require("neural").setup {
-        source = {
-          openai = {
-            api_key = vim.env.OPENAI_API_KEY,
-          },
-        },
-        ui = {
-          prompt_icon = require("base.utils").get_icon("PromptPrefix"),
-        },
-      }
-    end,
+    "coder/claudecode.nvim",
+    config = true,
+    keys = {
+      { "<leader>a", nil, desc = "AI/Claude Code" },
+      { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
+      { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
+      { "<leader>ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
+      { "<leader>aC", "<cmd>ClaudeCode --continue<cr>", desc = "Continue Claude" },
+      { "<leader>ab", "<cmd>ClaudeCodeAdd %<cr>", desc = "Add current buffer" },
+      { "<leader>as", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send to Claude" },
+      {
+        "<leader>as",
+        "<cmd>ClaudeCodeTreeAdd<cr>",
+        desc = "Add file",
+        ft = { "NvimTree", "neo-tree", "oil", "minifiles", "netrw" },
+      },
+    },
+    opts = {
+      terminal = {
+        split_side = "right",
+        split_width_percentage = 0.40,
+        provider = "native", -- no snacks.nvim dependency needed
+      },
+    },
   },
-
-  --  copilot [github code suggestions]
-  --  https://github.com/github/copilot.vim
-  --  As alternative to chatgpt, you can use copilot uncommenting this.
-  --  Then you must run :Copilot setup
-  -- {
-  --   "github/copilot.vim",
-  --   event = "User BaseFile"
-  -- },
-  -- copilot-cmp
-  -- https://github.com/zbirenbaum/copilot-cmp
-  -- {
-  --   "zbirenbaum/copilot-cmp",
-  --   opts = { suggesion = { enabled = false }, panel = { enabled = false } },
-  --   config = function (_, opts) require("copilot_cmp").setup(opts) end
-  -- },
 
   -- [guess-indent]
   -- https://github.com/NMAC427/guess-indent.nvim

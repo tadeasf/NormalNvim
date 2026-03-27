@@ -19,16 +19,17 @@
 --      -> toggle_coverage_signs
 --      -> toggle_cmp
 --      -> toggle_conceal
+--      -> toggle_css_colors
 --      -> toggle_diagnostics
 --      -> toggle_foldcolumn
 --      -> toggle_inlay_hints
 --      -> toggle_lsp_signature
+--      -> toggle_notifications
 --      -> toggle_paste
 --      -> toggle_signcolumn
 --      -> toggle_spell
 --      -> toggle_statusline
 --      -> toggle_tabline
---      -> toggle_ui_notifications
 --      -> toggle_url_effect
 --      -> toggle_wrap
 --      -> toggle_zen_mode
@@ -36,7 +37,7 @@
 
 local M = {}
 local utils = require("base.utils")
-local function bool2str(bool) return bool and "on" or "off" end
+local function bool2str(bool) return bool and "`ON`" or "`OFF`" end
 
 --- Change the number display modes
 function M.change_number()
@@ -51,7 +52,8 @@ function M.change_number()
   else -- not number and relativenumber
     vim.wo.relativenumber = false
   end
-  utils.notify(string.format("number %s, relativenumber %s", bool2str(vim.wo.number), bool2str(vim.wo.relativenumber)))
+  utils.notify(string.format("Window [Line numbers]: number %s, relative %s",
+    vim.wo.number and "`ON`" or "`OFF`", vim.wo.relativenumber and "`ON`" or "`OFF`"))
 end
 
 --- Set the indent and tab related numbers
@@ -65,30 +67,32 @@ function M.set_indent()
     vim.bo.tabstop = indent         -- local to buffer
     vim.bo.softtabstop = indent     -- local to buffer
     vim.bo.shiftwidth = indent      -- local to buffer
-    utils.notify(string.format("indent=%d %s", indent, vim.bo.expandtab and "expandtab" or "noexpandtab"))
+    utils.notify(string.format("Buffer [Indent]: %d %s", indent, vim.bo.expandtab and "expandtab" or "noexpandtab"))
   end
 end
 
 --- Toggle animations
 function M.toggle_animations()
-  if vim.g.minianimate_disable then
-    vim.g.minianimate_disable = false
-  else
-    vim.g.minianimate_disable = true
+  if not utils.is_available("mini.animate") then
+    utils.notify("Plugin 'mini.animate' not available")
+    return
   end
-
-  local state = vim.g.minianimate_disable
-  utils.notify(string.format("animations %s", bool2str(not state)))
+  vim.g.minianimate_disable = not vim.g.minianimate_disable
+  utils.notify(string.format("Global [Animations]: %s", bool2str(not vim.g.minianimate_disable)))
 end
 
 --- Toggle auto format
 function M.toggle_autoformat()
   vim.g.autoformat_enabled = not vim.g.autoformat_enabled
-  utils.notify(string.format("Global autoformatting %s", bool2str(vim.g.autoformat_enabled)))
+  utils.notify(string.format("Global [Autoformat]: %s", bool2str(vim.g.autoformat_enabled)))
 end
 
 --- Toggle autopairs
 function M.toggle_autopairs()
+  if not utils.is_available("nvim-autopairs") then
+    utils.notify("Plugin 'nvim-autopairs' not available")
+    return
+  end
   local ok, autopairs = pcall(require, "nvim-autopairs")
   if ok then
     if autopairs.state.disabled then
@@ -97,16 +101,14 @@ function M.toggle_autopairs()
       autopairs.disable()
     end
     vim.g.autopairs_enabled = autopairs.state.disabled
-    utils.notify(string.format("autopairs %s", bool2str(not autopairs.state.disabled)))
-  else
-    utils.notify "autopairs not available"
+    utils.notify(string.format("Global [Autopairs]: %s", bool2str(not autopairs.state.disabled)))
   end
 end
 
 --- Toggle background="dark"|"light"
 function M.toggle_background()
   vim.go.background = vim.go.background == "light" and "dark" or "light"
-  utils.notify(string.format("background=%s", vim.go.background))
+  utils.notify(string.format("Global [Background]: %s", vim.go.background))
 end
 
 --- Toggle buffer local auto format
@@ -116,7 +118,7 @@ function M.toggle_buffer_autoformat(bufnr)
   local old_val = vim.b[bufnr].autoformat_enabled
   if old_val == nil then old_val = vim.g.autoformat_enabled end
   vim.b[bufnr].autoformat_enabled = not old_val
-  utils.notify(string.format("Buffer autoformatting %s", bool2str(vim.b[bufnr].autoformat_enabled)))
+  utils.notify(string.format("Buffer [Autoformat]: %s", bool2str(vim.b[bufnr].autoformat_enabled)))
 end
 
 --- Toggle LSP inlay hints (buffer)
@@ -125,7 +127,7 @@ function M.toggle_buffer_inlay_hints(bufnr)
   bufnr = bufnr or 0
   vim.b[bufnr].inlay_hints_enabled = not vim.b[bufnr].inlay_hints_enabled
   vim.lsp.inlay_hint.enable(vim.b[bufnr].inlay_hints_enabled, { bufnr = bufnr })
-  utils.notify(string.format("Buffer inlay hints %s", bool2str(vim.b[bufnr].inlay_hints_enabled)))
+  utils.notify(string.format("Buffer [Inlay hints]: %s", bool2str(vim.b[bufnr].inlay_hints_enabled)))
 end
 
 --- Toggle buffer semantic token highlighting for all language servers that support it
@@ -136,7 +138,7 @@ function M.toggle_buffer_semantic_tokens(bufnr)
   for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
     if client.server_capabilities.semanticTokensProvider then
       vim.lsp.semantic_tokens[vim.b[bufnr].semantic_tokens_enabled and "start" or "stop"](bufnr, client.id)
-      utils.notify(string.format("Buffer lsp semantic highlighting %s", bool2str(vim.b[bufnr].semantic_tokens_enabled)))
+      utils.notify(string.format("Buffer [Semantic highlight]: %s", bool2str(vim.b[bufnr].semantic_tokens_enabled)))
     end
   end
 end
@@ -157,7 +159,7 @@ function M.toggle_buffer_syntax(bufnr)
     vim.bo[bufnr].syntax = "off"
     if vim.b.semantic_tokens_enabled then M.toggle_buffer_semantic_tokens(bufnr, true) end
   end
-  utils.notify(string.format("syntax %s", bool2str(vim.bo[bufnr].syntax)))
+  utils.notify(string.format("Buffer [Syntax]: %s", bool2str(vim.bo[bufnr].syntax ~= "off")))
 end
 
 --- Toggle codelens
@@ -170,7 +172,7 @@ function M.toggle_codelens(bufnr)
   else
     vim.lsp.codelens.clear()
   end
-  utils.notify(string.format("CodeLens %s", bool2str(vim.g.codelens_enabled)))
+  utils.notify(string.format("Global [CodeLens]: %s", bool2str(vim.g.codelens_enabled)))
 end
 
 --- Toggle coverage signs
@@ -191,17 +193,29 @@ function M.toggle_coverage_signs(bufnr)
   end
 end
 
---- Toggle cmp entrirely
+--- Toggle cmp entirely
 function M.toggle_cmp()
+  if not utils.is_available("nvim-cmp") then
+    utils.notify("Plugin 'nvim-cmp' not available")
+    return
+  end
   vim.g.cmp_enabled = not vim.g.cmp_enabled
-  local ok, _ = pcall(require, "cmp")
-  utils.notify(ok and string.format("completion %s", bool2str(vim.g.cmp_enabled)) or "completion not available")
+  utils.notify(string.format("Global [Completion]: %s", bool2str(vim.g.cmp_enabled)))
 end
 
 --- Toggle conceal=2|0
 function M.toggle_conceal()
   vim.opt.conceallevel = vim.opt.conceallevel:get() == 0 and 2 or 0
-  utils.notify(string.format("conceal %s", bool2str(vim.opt.conceallevel:get() == 2)))
+  utils.notify(string.format("Window [Conceal]: %s", bool2str(vim.opt.conceallevel:get() == 2)))
+end
+
+--- Toggle CSS color highlighting
+function M.toggle_css_colors()
+  if not utils.is_available("nvim-highlight-colors") then
+    utils.notify("Plugin 'nvim-highlight-colors' not available")
+    return
+  end
+  vim.cmd("HighlightColors toggle")
 end
 
 --- Toggle diagnostics
@@ -209,13 +223,13 @@ function M.toggle_diagnostics()
   vim.g.diagnostics_mode = (vim.g.diagnostics_mode - 1) % 4
   vim.diagnostic.config(require("base.utils.lsp").diagnostics[vim.g.diagnostics_mode])
   if vim.g.diagnostics_mode == 0 then
-    utils.notify "diagnostics off"
+    utils.notify("Global [Diagnostics]: `OFF`")
   elseif vim.g.diagnostics_mode == 1 then
-    utils.notify "only status diagnostics"
+    utils.notify("Global [Diagnostics]: status only")
   elseif vim.g.diagnostics_mode == 2 then
-    utils.notify "virtual text off"
+    utils.notify("Global [Diagnostics]: virtual text `OFF`")
   else
-    utils.notify "all diagnostics on"
+    utils.notify("Global [Diagnostics]: `ON`")
   end
 end
 
@@ -225,7 +239,7 @@ function M.toggle_foldcolumn()
   local curr_foldcolumn = vim.wo.foldcolumn
   if curr_foldcolumn ~= "0" then last_active_foldcolumn = curr_foldcolumn end
   vim.wo.foldcolumn = curr_foldcolumn == "0" and (last_active_foldcolumn or "1") or "0"
-  utils.notify(string.format("foldcolumn=%s", vim.wo.foldcolumn))
+  utils.notify(string.format("Window [Foldcolumn]: %s", vim.wo.foldcolumn))
 end
 
 --- Toggle LSP inlay hints (global)
@@ -235,19 +249,29 @@ function M.toggle_inlay_hints(bufnr)
   vim.g.inlay_hints_enabled = not vim.g.inlay_hints_enabled -- flip global state
   vim.b.inlay_hints_enabled = not vim.g.inlay_hints_enabled -- sync buffer state
   vim.lsp.buf.inlay_hint.enable(vim.g.inlay_hints_enabled, { bufnr = bufnr }) -- apply state
-  utils.notify(string.format("Global inlay hints %s", bool2str(vim.g.inlay_hints_enabled)))
+  utils.notify(string.format("Global [Inlay hints]: %s", bool2str(vim.g.inlay_hints_enabled)))
 end
 
 --- Toggle lsp signature
 function M.toggle_lsp_signature()
+  if not utils.is_available("lsp_signature.nvim") then
+    utils.notify("Plugin 'lsp_signature.nvim' not available")
+    return
+  end
   local state = require('lsp_signature').toggle_float_win()
-  utils.notify(string.format("lsp signature %s", bool2str(state)))
+  utils.notify(string.format("Global [LSP signature]: %s", bool2str(state)))
+end
+
+--- Toggle notifications
+function M.toggle_notifications()
+  vim.g.notifications_enabled = not vim.g.notifications_enabled
+  utils.notify(string.format("Global [Notifications]: %s", bool2str(vim.g.notifications_enabled)))
 end
 
 --- Toggle paste
 function M.toggle_paste()
   vim.opt.paste = not vim.opt.paste:get() -- local to window
-  utils.notify(string.format("paste %s", bool2str(vim.opt.paste:get())))
+  utils.notify(string.format("Window [Paste]: %s", bool2str(vim.opt.paste:get())))
 end
 
 --- Toggle signcolumn="auto"|"no"
@@ -259,13 +283,13 @@ function M.toggle_signcolumn()
   else
     vim.wo.signcolumn = "no"
   end
-  utils.notify(string.format("signcolumn=%s", vim.wo.signcolumn))
+  utils.notify(string.format("Window [Signcolumn]: %s", vim.wo.signcolumn))
 end
 
 --- Toggle spell
 function M.toggle_spell()
   vim.wo.spell = not vim.wo.spell -- local to window
-  utils.notify(string.format("spell %s", bool2str(vim.wo.spell)))
+  utils.notify(string.format("Window [Spell]: %s", bool2str(vim.wo.spell)))
 end
 
 --- Toggle laststatus=3|2|0
@@ -282,44 +306,36 @@ function M.toggle_statusline()
     vim.opt.laststatus = 0
     status = "off"
   end
-  utils.notify(string.format("statusline %s", status))
+  utils.notify(string.format("Global [Statusline]: %s", status))
 end
 
 --- Toggle showtabline=2|0
 function M.toggle_tabline()
   vim.opt.showtabline = vim.opt.showtabline:get() == 0 and 2 or 0
-  utils.notify(string.format("tabline %s", bool2str(vim.opt.showtabline:get() == 2)))
-end
-
---- Toggle notifications for UI toggles
-function M.toggle_ui_notifications()
-  vim.g.notifications_enabled = not vim.g.notifications_enabled
-  utils.notify(string.format("Notifications %s", bool2str(vim.g.notifications_enabled)))
+  utils.notify(string.format("Global [Tabline]: %s", bool2str(vim.opt.showtabline:get() == 2)))
 end
 
 --- Toggle URL/URI syntax highlighting rules
 function M.toggle_url_effect()
   vim.g.url_effect_enabled = not vim.g.url_effect_enabled
   require("base.utils").set_url_effect()
-  utils.notify(string.format("URL effect %s", bool2str(vim.g.url_effect_enabled)))
+  utils.notify(string.format("Global [URL highlight]: %s", bool2str(vim.g.url_effect_enabled)))
 end
 
 --- Toggle wrap
 function M.toggle_wrap()
   vim.wo.wrap = not vim.wo.wrap -- local to window
-  utils.notify(string.format("wrap %s", bool2str(vim.wo.wrap)))
+  utils.notify(string.format("Window [Line wrap]: %s", bool2str(vim.wo.wrap)))
 end
 
 --- Toggle zen mode
---- @param bufnr? number the buffer to toggle `zen mode` on.
-function M.toggle_zen_mode(bufnr)
-  bufnr = bufnr or 0
-  if not vim.b[bufnr].zen_mode then
-    vim.b[bufnr].zen_mode = true
-  else
-    vim.b[bufnr].zen_mode = false
+function M.toggle_zen_mode()
+  if not utils.is_available("zen-mode.nvim") then
+    utils.notify("Plugin 'zen-mode.nvim' not available")
+    return
   end
-  utils.notify(string.format("zen mode %s", bool2str(vim.b[bufnr].zen_mode)))
+  vim.g.zen_mode = not vim.g.zen_mode
+  utils.notify(string.format("Global [Zen mode]: %s", bool2str(vim.g.zen_mode)))
   vim.cmd "ZenMode"
 end
 

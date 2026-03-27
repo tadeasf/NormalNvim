@@ -26,6 +26,12 @@ local is_android = vim.fn.isdirectory('/data') == 1 -- true if on android
 
 return {
   {
+    "eldritch-theme/eldritch.nvim",
+    lazy = false,
+    priority = 1000,
+  },
+
+  {
     "catppuccin/nvim",
     name = "catppuccin",
     config = function()
@@ -149,7 +155,7 @@ return {
     event = "User BaseDefered",
     opts = function()
       local fps
-      if is_android then fps = 30 else fps = 144 end
+      if is_android then fps = 30 else fps = 244 end
 
       return {
         timeout = 2500,
@@ -513,6 +519,7 @@ return {
         Boolean = "⊨",
         Class = "󰌗",
         Constructor = "",
+        Copilot = "",
         Key = "󰌆",
         Namespace = "󰅪",
         Null = "NULL",
@@ -531,6 +538,13 @@ return {
     config = function(_, opts)
       require("lspkind").init(opts)
     end,
+  },
+
+  --  nvim-highlight-colors [hex colors]
+  --  https://github.com/brenoprata10/nvim-highlight-colors
+  {
+    "brenoprata10/nvim-highlight-colors",
+    event = "User BaseFile",
   },
 
   --  nvim-scrollbar [scrollbar]

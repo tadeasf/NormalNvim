@@ -1337,7 +1337,7 @@ function M.lsp_mappings(client, bufnr)
   -- @return boolean # `true` if any of the clients provide the capability.
   local function has_capability(capability, filter)
     for _, lsp_client in ipairs(vim.lsp.get_clients(filter)) do
-      if lsp_client.supports_method(capability) then return true end
+      if lsp_client:supports_method(capability) then return true end
     end
     return false
   end
@@ -1384,12 +1384,12 @@ function M.lsp_mappings(client, bufnr)
     events = { "InsertLeave" },
     desc = "Refresh codelens",
     callback = function(args)
-      if client.supports_method "textDocument/codeLens" then
+      if client:supports_method("textDocument/codeLens") then
         if vim.g.codelens_enabled then vim.lsp.codelens.refresh({ bufnr = args.buf }) end
       end
     end,
   })
-  if client.supports_method "textDocument/codeLens" then -- on LspAttach
+  if client:supports_method("textDocument/codeLens") then -- on LspAttach
     if vim.g.codelens_enabled then vim.lsp.codelens.refresh({ bufnr = 0 }) end
   end
 

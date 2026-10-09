@@ -4,6 +4,10 @@
 --  Functions we use to configure the plugin `mason-lspconfig.nvim`.
 --  You can specify your own lsp settings inside `M.apply_user_lsp_settings()`.
 --
+--  Since Neovim 0.11 we don't use the `require("lspconfig")` framework anymore.
+--  Instead, we register our settings with the nvim native lsp API:
+--  `vim.lsp.config()`, and `mason-lspconfig` enables the servers you install.
+--
 --  Most options we use in `M.apply_default_lsp_settings()`
 --  can be tweaked on the file `../1-options.lua`.
 --  Take this into consideration to minimize the risk of breaking stuff.
@@ -12,11 +16,10 @@
 --      -> M.apply_default_lsp_settings  → Apply our default lsp settings.
 --      -> M.apply_user_lsp_mappings     → Apply the user lsp keymappings.
 --      -> M.apply_user_lsp_settings     → Apply the user lsp settings.
---      -> M.setup                       → It passes the user lsp settings to lspconfig.
+--      -> M.setup                       → Register the settings on nvim lsp.
 
 local M = {}
 local utils = require "base.utils"
-local stored_handlers = {}
 
 --- Apply default settings for diagnostics, formatting, and lsp capabilities.
 --- It only need to be executed once, normally on mason-lspconfig.
@@ -43,11 +46,6 @@ M.apply_default_lsp_settings = function()
   -- Apply default lsp hover borders
   -- Applies the option lsp_round_borders_enabled from ../1-options.lua
   M.lsp_hover_config = vim.g.lsp_round_borders_enabled and { border = "rounded", silent = true } or {}
-  if vim.fn.has("nvim-0.11") == 0 then -- TODO: Delete when dropping 0.10 support
-    vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, { border = "rounded", silent = true })
-    vim.lsp.handlers["textDocument/signatureHelp"] =
-        vim.lsp.with(vim.lsp.handlers.signature_help, { border = "rounded", silent = true })
-  end
 
   -- Set default diagnostics
   local default_diagnostics = {
@@ -68,7 +66,7 @@ M.apply_default_lsp_settings = function()
       focused = false,
       style = "minimal",
       border = "rounded",
-      source = "always",
+      source = true,
       header = "",
       prefix = "",
     },
@@ -92,6 +90,21 @@ M.apply_default_lsp_settings = function()
   }
   vim.diagnostic.config(M.diagnostics[vim.g.diagnostics_mode])
 
+  -- Define the client capabilities we announce to every lsp server.
+  M.capabilities = vim.lsp.protocol.make_client_capabilities()
+  M.capabilities.textDocument.completion.completionItem.documentationFormat = { "markdown", "plaintext" }
+  M.capabilities.textDocument.completion.completionItem.snippetSupport = true
+  M.capabilities.textDocument.completion.completionItem.preselectSupport = true
+  M.capabilities.textDocument.completion.completionItem.insertReplaceSupport = true
+  M.capabilities.textDocument.completion.completionItem.labelDetailsSupport = true
+  M.capabilities.textDocument.completion.completionItem.deprecatedSupport = true
+  M.capabilities.textDocument.completion.completionItem.commitCharactersSupport = true
+  M.capabilities.textDocument.completion.completionItem.tagSupport = { valueSet = { 1 } }
+  M.capabilities.textDocument.completion.completionItem.resolveSupport =
+  { properties = { "documentation", "detail", "additionalTextEdits" } }
+  M.capabilities.textDocument.foldingRange = { dynamicRegistration = false, lineFoldingOnly = true }
+  M.flags = {}
+
   -- Apply formatting settings
   M.formatting = { format_on_save = { enabled = true }, disabled = {} }
   if type(M.formatting.format_on_save) == "boolean" then
@@ -110,8 +123,8 @@ end
 
 --- This function has the sole purpose of passing the lsp keymappings to lsp.
 --- We have this function, because we use it on none-ls.
---- @param client string The client where the lsp mappings will load.
---- @param bufnr string The bufnr where the lsp mappings will load.
+--- @param client vim.lsp.Client The client where the lsp mappings will load.
+--- @param bufnr number The bufnr where the lsp mappings will load.
 function M.apply_user_lsp_mappings(client, bufnr)
   local lsp_mappings = require("base.4-mappings").lsp_mappings(client, bufnr)
   if not vim.tbl_isempty(lsp_mappings.v) then
@@ -125,23 +138,7 @@ end
 --- @param server_name string The name of the server
 --- @return table # The table of LSP options used when setting up the given language server
 function M.apply_user_lsp_settings(server_name)
-  local server = require("lspconfig")[server_name]
-
-  -- Define user server capabilities.
-  M.capabilities = vim.lsp.protocol.make_client_capabilities()
-  M.capabilities.textDocument.completion.completionItem.documentationFormat = { "markdown", "plaintext" }
-  M.capabilities.textDocument.completion.completionItem.snippetSupport = true
-  M.capabilities.textDocument.completion.completionItem.preselectSupport = true
-  M.capabilities.textDocument.completion.completionItem.insertReplaceSupport = true
-  M.capabilities.textDocument.completion.completionItem.labelDetailsSupport = true
-  M.capabilities.textDocument.completion.completionItem.deprecatedSupport = true
-  M.capabilities.textDocument.completion.completionItem.commitCharactersSupport = true
-  M.capabilities.textDocument.completion.completionItem.tagSupport = { valueSet = { 1 } }
-  M.capabilities.textDocument.completion.completionItem.resolveSupport =
-  { properties = { "documentation", "detail", "additionalTextEdits" } }
-  M.capabilities.textDocument.foldingRange = { dynamicRegistration = false, lineFoldingOnly = true }
-  M.flags = {}
-  local opts = vim.tbl_deep_extend("force", server, { capabilities = M.capabilities, flags = M.flags })
+  local opts = { capabilities = M.capabilities, flags = M.flags }
 
   -- Define user server rules.
   if server_name == "jsonls" then -- Add schemastore schemas
@@ -155,32 +152,33 @@ function M.apply_user_lsp_settings(server_name)
     if is_schemastore_loaded then opts.settings = { yaml = { schemas = schemastore.yaml.schemas() } } end
   end
 
-  -- Apply them
-  local old_on_attach = server.on_attach
-  opts.on_attach = function(client, bufnr)
-    -- If the server on_attach function exist → server.on_attach(client, bufnr)
-    if type(old_on_attach) == "function" then old_on_attach(client, bufnr) end
-    -- Also, apply mappings to the buffer.
-    M.apply_user_lsp_mappings(client, bufnr)
-  end
   return opts
 end
 
---- This function passes the `user lsp settings` to lspconfig,
---- which is the responsible of configuring everything for us.
+--- Register the `user lsp settings` on the nvim native lsp client.
 ---
---- You are meant to call this function from the plugin `mason-lspconfig.nvim`.
---- @param server string A lsp server name.
+--- Servers are enabled by `mason-lspconfig`, and their default config comes
+--- from `nvim-lspconfig` (the `lsp/` runtime directory). Here we only layer
+--- our own settings on top of that.
 --- @return nil
-M.setup = function(server)
-  -- Get the user settings.
-  local opts = M.apply_user_lsp_settings(server)
+M.setup = function()
+  -- Settings applied to every lsp server.
+  vim.lsp.config("*", { capabilities = M.capabilities, flags = M.flags })
 
-  -- Get a handler from lspconfig.
-  local setup_handler = stored_handlers[server] or require("lspconfig")[server].setup(opts)
+  -- Settings applied to a specific lsp server.
+  for _, server_name in ipairs({ "jsonls", "yamlls" }) do
+    vim.lsp.config(server_name, M.apply_user_lsp_settings(server_name))
+  end
 
-  -- Apply our user settings to the lspconfig handler.
-  if setup_handler then setup_handler(server, opts) end
+  -- Apply the lsp mappings to every client that attaches to a buffer.
+  vim.api.nvim_create_autocmd("LspAttach", {
+    group = vim.api.nvim_create_augroup("base_lsp_attach", { clear = true }),
+    desc = "Apply the user lsp mappings on attach",
+    callback = function(args)
+      local client = vim.lsp.get_client_by_id(args.data.client_id)
+      if client then M.apply_user_lsp_mappings(client, args.buf) end
+    end,
+  })
 end
 
 return M

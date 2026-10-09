@@ -179,38 +179,39 @@ return {
 
   --  LSP -------------------------------------------------------------------
 
-  --  nvim-lspconfig [lsp configs]
+  --  nvim-lspconfig [lsp default configs]
   --  https://github.com/neovim/nvim-lspconfig
-  --  This plugin provide default configs for the lsp servers available on mason.
+  --  This plugin is just a dependency for other plugins.
+  --  It provides default configs for the lsp servers available on mason.
   {
     "neovim/nvim-lspconfig",
     event = "User BaseFile",
   },
 
-  -- mason-lspconfig [auto start lsp]
-  -- https://github.com/williamboman/mason-lspconfig.nvim
-  -- This plugin auto starts the lsp servers installed by Mason
-  -- every time Neovim trigger the event FileType.
+  -- mason-lspconfig [auto start lsp clients]
+  -- https://github.com/mason-org/mason-lspconfig.nvim
+  -- This plugin auto starts the lsp servers installed by Mason.
   {
-    "williamboman/mason-lspconfig.nvim",
-    dependencies = { "neovim/nvim-lspconfig" },
+    "mason-org/mason-lspconfig.nvim",
+    dependencies = { "neovim/nvim-lspconfig", "mason-org/mason.nvim" },
     event = "User BaseFile",
-    opts = function(_, opts)
-      if not opts.handlers then opts.handlers = {} end
-      opts.handlers[1] = function(server) utils_lsp.setup(server) end
-    end,
+    opts = {
+      -- rustaceanvim starts rust_analyzer itself, so don't start it twice.
+      automatic_enable = { exclude = { "rust_analyzer" } },
+    },
     config = function(_, opts)
-      require("mason-lspconfig").setup(opts)
       utils_lsp.apply_default_lsp_settings() -- Apply our default lsp settings.
+      utils_lsp.setup()                      -- Register them on the nvim lsp client.
+      require("mason-lspconfig").setup(opts) -- Enable the servers installed by mason.
       utils.trigger_event("FileType")        -- This line starts this plugin.
     end,
   },
 
   --  mason [lsp package manager]
-  --  https://github.com/williamboman/mason.nvim
+  --  https://github.com/mason-org/mason.nvim
   --  https://github.com/zeioth/mason-extra-cmds
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     dependencies = { "zeioth/mason-extra-cmds", opts = {} },
     cmd = {
       "Mason",
@@ -250,7 +251,7 @@ return {
     "zeioth/none-ls-autoload.nvim",
     event = "User BaseFile",
     dependencies = {
-      "williamboman/mason.nvim",
+      "mason-org/mason.nvim",
       "zeioth/none-ls-external-sources.nvim"
     },
     opts = {
@@ -296,8 +297,8 @@ return {
         args = { "-i", "2", "-filename", "$FILENAME" },
       })
 
-      -- Attach the user lsp mappings to every none-ls client.
-      return { on_attach = utils_lsp.apply_user_lsp_mappings }
+      -- Note: the user lsp mappings are applied on LspAttach.
+      -- See `M.setup()` on ../base/utils/lsp.lua
     end
   },
 
@@ -521,9 +522,8 @@ return {
     ft = { "rust" },
     opts = {
       server = {
-        on_attach = function(client, bufnr)
-          require("base.utils.lsp").apply_user_lsp_mappings(client, bufnr)
-        end,
+        -- Note: the user lsp mappings are applied on LspAttach.
+        -- See `M.setup()` on ../base/utils/lsp.lua
         default_settings = {
           ["rust-analyzer"] = {
             cargo = { allFeatures = true },

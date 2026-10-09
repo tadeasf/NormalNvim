@@ -69,7 +69,7 @@ return {
   { "onsails/lspkind.nvim", version = "^1" },
   { "petertriho/nvim-scrollbar", version = "^1" },
   { "rafamadriz/friendly-snippets", version = "^1" },
-  { "ray-x/lsp_signature.nvim", version = "^0.3" },
+  { "ray-x/lsp_signature.nvim", commit = "1997451c4c9956a1380d8bea4b0e33ebdf07976e" },
   { "rcarriga/cmp-dap", commit = "ea92773e84c0ad3288c3bc5e452ac91559669087" },
   { "rcarriga/nvim-dap-ui", commit = "cf91d5e2d07c72903d052f5207511bf7ecdb7122" },
   { "rcarriga/nvim-notify", version = "^4" },
